@@ -41,6 +41,8 @@ const useMusicVisualizer = (canvasRef) => {
         sharedAudioContext.resume();
       }
       audioRef.current.src = source;
+      audioRef.current.load();
+      audioRef.current.play();
 
       if (!visualizer) {
         const newVisualizer = new Visualizer(
