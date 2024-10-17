@@ -6,16 +6,16 @@ import styled from 'styled-components';
 import Controls from './Controls';
 import VirtualKeyboard from './VirtualKeyboard';
 import { Instructions, Container } from './styles';
+import { px } from '@xstyled/styled-components';
 import { useSharedAudioContext } from '../../context/AudioContextProvider';
-import { FaArrowDown, FaArrowUp } from 'react-icons/fa';
-import useIsMobile from '../../hooks/useIsMobile'; // Import the useIsMobile hook
+import { FaArrowDown, FaArrowUp } from 'react-icons/fa'; // Import icons
 
 const ButtonContainer = styled.div`
   display: flex;
   gap: 10px;
   margin-top: 10px;
   align-self: center;
-  justify-content: center;
+  justify-content: center; /* Center the buttons */
 `;
 
 const ToggleButton = styled(Button)`
@@ -80,17 +80,11 @@ const Synth = ({ onClose, position }) => {
   // Refs for active oscillators/gains
   const activeOscillatorsRef = useRef({});
   const activeGainsRef = useRef({});
-  const compressorRef = useRef(null);
-  const masterGainRef = useRef(null);
+  const compressorRef = useRef(null); // We will use shared AudioContext
+  const masterGainRef = useRef(null); // Ref for master gain node
 
-  // Get shared AudioContext and initialization function
-  const { audioContext, initAudioContext } = useSharedAudioContext();
-
-  // State to track if AudioContext is unlocked
-  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
-
-  // Detect if the user is on a mobile device
-  const isMobile = useIsMobile();
+  // Get shared AudioContext
+  const audioContext = useSharedAudioContext();
 
   // Ref to store current parameters
   const parametersRef = useRef({
@@ -107,8 +101,8 @@ const Synth = ({ onClose, position }) => {
     lfoFrequency,
     crazy,
     distortedFmIntensity,
-    octaveShift,
-    volume,
+    octaveShift, // Include octaveShift
+    volume, // Include volume
   });
 
   // Update parametersRef whenever state changes
@@ -127,8 +121,8 @@ const Synth = ({ onClose, position }) => {
       lfoFrequency,
       crazy,
       distortedFmIntensity,
-      octaveShift,
-      volume,
+      octaveShift, // Update octaveShift
+      volume, // Update volume
     };
 
     // Destructure current parameters for ease of use
@@ -143,7 +137,7 @@ const Synth = ({ onClose, position }) => {
     } = parametersRef.current;
 
     // Update master gain volume
-    if (masterGainRef.current && audioContext) {
+    if (masterGainRef.current) {
       masterGainRef.current.gain.setValueAtTime(currentVolume, audioContext.currentTime);
     }
 
@@ -161,21 +155,25 @@ const Synth = ({ onClose, position }) => {
       // Update AM frequency if AM is on
       if (oscList.amMod) {
         oscList.amMod.frequency.setValueAtTime(currentAmFreq, audioContext.currentTime);
+        // console.log(`Updated AM frequency to ${currentAmFreq}`);
       }
 
       // Update FM frequency if FM is on
       if (oscList.fmMod) {
         oscList.fmMod.frequency.setValueAtTime(currentFmFreq, audioContext.currentTime);
+        // console.log(`Updated FM frequency to ${currentFmFreq}`);
       }
 
       // Update LFO frequency if LFO is on
       if (oscList.lfo) {
         oscList.lfo.frequency.setValueAtTime(currentLfoFreq, audioContext.currentTime);
+        // console.log(`Updated LFO frequency to ${currentLfoFreq}`);
       }
 
       // Update distorted FM intensity if applicable
       if (oscList.distortedFmMod && oscList.distortedFmGain) {
         oscList.distortedFmGain.gain.setValueAtTime(100 * currentDistortedFmIntensity, audioContext.currentTime);
+        // console.log(`Updated distorted FM intensity to ${currentDistortedFmIntensity}`);
       }
     });
   }, [
@@ -192,8 +190,8 @@ const Synth = ({ onClose, position }) => {
     lfoFrequency,
     crazy,
     distortedFmIntensity,
-    octaveShift,
-    volume,
+    octaveShift, // Include octaveShift in dependencies
+    volume, // Include volume in dependencies
     audioContext,
   ]);
 
@@ -264,6 +262,7 @@ const Synth = ({ onClose, position }) => {
       // Create Compressor and connect to Master Gain
       const compressor = audioContext.createDynamicsCompressor();
       compressor.threshold.setValueAtTime(-50, audioContext.currentTime);
+      // You can adjust compressor settings here if needed
       compressor.connect(masterGain);
       compressorRef.current = compressor;
       console.log('Compressor and Master Gain initialized and connected to AudioContext');
@@ -321,7 +320,7 @@ const Synth = ({ onClose, position }) => {
 
     // Ensure AudioContext is running
     if (audioContext.state === 'suspended') {
-      await audioContext.resume();
+      audioContext.resume();
     }
 
     const currentParams = parametersRef.current;
@@ -387,8 +386,6 @@ const Synth = ({ onClose, position }) => {
       gainNode.connect(compressorRef.current);
     } else if (masterGainRef.current) {
       gainNode.connect(masterGainRef.current);
-    } else {
-      gainNode.connect(audioContext.destination);
     }
 
     // Store Gain Node
@@ -582,62 +579,37 @@ const Synth = ({ onClose, position }) => {
     }
   };
 
-  // Function to handle virtual key press
   const handleVirtualKeyDown = (key) => {
-    if (!audioContext) {
-      initAudioContext();
-    }
-
     if (audioContext) {
       if (audioContext.state === 'suspended') {
-        audioContext.resume().then(() => {
-          unlockAudioContext();
-          playNoteHandler(key);
-        });
-      } else {
-        if (!isAudioUnlocked) {
-          unlockAudioContext();
-        }
-        playNoteHandler(key);
-      }
-    }
-  };
-
-  // Function to unlock AudioContext on mobile devices
-  const unlockAudioContext = () => {
-    if (audioContext && !isAudioUnlocked) {
-      // Create empty buffer and play it
-      const buffer = audioContext.createBuffer(1, 1, 22050);
-      const source = audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioContext.destination);
-      source.start(0);
-      if (audioContext.state === 'suspended') {
+        // Resume the audio context directly in response to the user interaction
         audioContext.resume();
       }
-      setIsAudioUnlocked(true);
-      console.log('AudioContext unlocked on mobile');
+      const currentParams = parametersRef.current;
+      if (currentParams.crazy) {
+        playCrazy();
+      } else {
+        const virtualKey = `virtual-${key.note}`;
+        if (!activeOscillatorsRef.current[virtualKey]) {
+          playNote(
+            virtualKey,
+            key.frequency,
+            currentParams.additiveMode === 'on' ? currentParams.numPartials : 1,
+            currentParams.additiveMode === 'on' ? currentParams.distPartials : 0,
+            currentParams.amMode === 'on' ? currentParams.amFrequency : 0,
+            currentParams.fmMode === 'on' ? currentParams.fmFrequency : 0,
+            currentParams.lfoMode === 'on' ? currentParams.lfoFrequency : 0
+          );
+        }
+      }
     }
   };
 
-  // Function to handle playing notes
-  const playNoteHandler = (key) => {
-    const currentParams = parametersRef.current;
-    if (currentParams.crazy) {
-      playCrazy();
-    } else {
-      const virtualKey = `virtual-${key.note}`;
-      if (!activeOscillatorsRef.current[virtualKey]) {
-        playNote(
-          virtualKey,
-          key.frequency,
-          currentParams.additiveMode === 'on' ? parseInt(currentParams.numPartials) : 1,
-          currentParams.additiveMode === 'on' ? parseInt(currentParams.distPartials) : 0,
-          currentParams.amMode === 'on' ? parseFloat(currentParams.amFrequency) : 0,
-          currentParams.fmMode === 'on' ? parseFloat(currentParams.fmFrequency) : 0,
-          currentParams.lfoMode === 'on' ? parseFloat(currentParams.lfoFrequency) : 0
-        );
-      }
+  // Function to handle virtual key release
+  const handleVirtualKeyUp = (key) => {
+    const virtualKey = `virtual-${key.note}`;
+    if (activeOscillatorsRef.current[virtualKey]) {
+      stopNote(virtualKey);
     }
   };
 
@@ -707,7 +679,7 @@ const Synth = ({ onClose, position }) => {
           distortedFmIntensity={distortedFmIntensity}
           setDistortedFmIntensity={setDistortedFmIntensity}
           volume={volume}
-          setVolume={setVolume}
+          setVolume={setVolume} // Pass volume and setter
         />
 
         {/* Instructions */}
@@ -756,12 +728,7 @@ const Synth = ({ onClose, position }) => {
           <VirtualKeyboard
             keys={shiftedKeys} // Use shiftedKeys here
             handleVirtualKeyDown={handleVirtualKeyDown}
-            handleVirtualKeyUp={(key) => {
-              const virtualKey = `virtual-${key.note}`;
-              if (activeOscillatorsRef.current[virtualKey]) {
-                stopNote(virtualKey);
-              }
-            }}
+            handleVirtualKeyUp={handleVirtualKeyUp}
             activeOscillators={activeOscillatorsRef.current}
             isTwoRows={isTwoRows}
           />

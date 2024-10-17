@@ -1,5 +1,5 @@
 // context/AudioContextProvider.js
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AudioContextContext = createContext(null);
 
@@ -11,11 +11,42 @@ export const AudioContextProvider = ({ children }) => {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       setAudioContext(ctx);
       console.log('AudioContext initialized');
+    } else if (audioContext.state === 'suspended') {
+      audioContext.resume().then(() => {
+        console.log('AudioContext resumed');
+      }).catch((e) => {
+        console.error('AudioContext resume failed:', e);
+      });
     }
   };
 
+  // context/AudioContextProvider.js
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      initAudioContext();
+      // Remove event listeners after initialization
+      window.removeEventListener('pointerdown', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+      window.removeEventListener('touchend', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+    };
+  
+    window.addEventListener('pointerdown', handleUserInteraction, { once: true });
+    window.addEventListener('keydown', handleUserInteraction, { once: true });
+    window.addEventListener('touchend', handleUserInteraction, { once: true });
+    window.addEventListener('touchstart', handleUserInteraction, { once: true });
+  
+    return () => {
+      window.removeEventListener('pointerdown', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+      window.removeEventListener('touchend', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+    };
+  }, [audioContext]);
+
+
   return (
-    <AudioContextContext.Provider value={{ audioContext, initAudioContext }}>
+    <AudioContextContext.Provider value={audioContext}>
       {children}
     </AudioContextContext.Provider>
   );
