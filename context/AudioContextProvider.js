@@ -27,14 +27,17 @@ export const AudioContextProvider = ({ children }) => {
       // Remove event listeners after initialization
       window.removeEventListener('pointerdown', handleUserInteraction);
       window.removeEventListener('keydown', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction); // Added touchstart
     };
 
     window.addEventListener('pointerdown', handleUserInteraction, { once: true });
     window.addEventListener('keydown', handleUserInteraction, { once: true });
+    window.addEventListener('touchstart', handleUserInteraction, { once: true }); // Added touchstart
 
     return () => {
       window.removeEventListener('pointerdown', handleUserInteraction);
       window.removeEventListener('keydown', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction); // Added touchstart
     };
   }, [audioContext]);
 
