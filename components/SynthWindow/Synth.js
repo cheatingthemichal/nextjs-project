@@ -85,6 +85,15 @@ const Synth = ({ onClose, position }) => {
 
   // Get shared AudioContext
   const audioContext = useSharedAudioContext();
+  const handleSynthInteraction = () => {
+    if (audioContext && audioContext.state === 'suspended') {
+      audioContext.resume().then(() => {
+        console.log('AudioContext resumed from Synth interaction');
+      }).catch((e) => {
+        console.error('AudioContext resume failed from Synth interaction:', e);
+      });
+    }
+  };
 
   // Ref to store current parameters
   const parametersRef = useRef({
@@ -580,6 +589,7 @@ const Synth = ({ onClose, position }) => {
   };
 
   const handleVirtualKeyDown = (key) => {
+    handleSynthInteraction();
     const currentParams = parametersRef.current;
     if (currentParams.crazy) {
       playCrazy();
