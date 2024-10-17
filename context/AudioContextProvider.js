@@ -20,26 +20,24 @@ export const AudioContextProvider = ({ children }) => {
     }
   };
 
+  // Add event listeners for user interactions to initialize the AudioContext
   useEffect(() => {
     const handleUserInteraction = () => {
       initAudioContext();
       // Remove event listeners after initialization
       window.removeEventListener('pointerdown', handleUserInteraction);
       window.removeEventListener('keydown', handleUserInteraction);
-      window.removeEventListener('touchstart', handleUserInteraction); // Add this line
     };
-  
+
     window.addEventListener('pointerdown', handleUserInteraction, { once: true });
     window.addEventListener('keydown', handleUserInteraction, { once: true });
-    window.addEventListener('touchstart', handleUserInteraction, { once: true }); // Add this line
-  
+
     return () => {
       window.removeEventListener('pointerdown', handleUserInteraction);
       window.removeEventListener('keydown', handleUserInteraction);
-      window.removeEventListener('touchstart', handleUserInteraction); // Add this line
     };
   }, [audioContext]);
-  
+
   return (
     <AudioContextContext.Provider value={audioContext}>
       {children}
