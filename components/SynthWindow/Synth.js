@@ -580,25 +580,27 @@ const Synth = ({ onClose, position }) => {
   };
 
   const handleVirtualKeyDown = (key) => {
-    if (!audioContext) {
-      // Initialize AudioContext
-      audioContext.resume();
-    }
-    const currentParams = parametersRef.current;
-    if (currentParams.crazy) {
-      playCrazy();
-    } else {
-      const virtualKey = `virtual-${key.note}`;
-      if (!activeOscillatorsRef.current[virtualKey]) {
-        playNote(
-          virtualKey,
-          key.frequency,
-          currentParams.additiveMode === 'on' ? currentParams.numPartials : 1,
-          currentParams.additiveMode === 'on' ? currentParams.distPartials : 0,
-          currentParams.amMode === 'on' ? currentParams.amFrequency : 0,
-          currentParams.fmMode === 'on' ? currentParams.fmFrequency : 0,
-          currentParams.lfoMode === 'on' ? currentParams.lfoFrequency : 0
-        );
+    if (audioContext) {
+      if (audioContext.state === 'suspended') {
+        // Resume the audio context directly in response to the user interaction
+        audioContext.resume();
+      }
+      const currentParams = parametersRef.current;
+      if (currentParams.crazy) {
+        playCrazy();
+      } else {
+        const virtualKey = `virtual-${key.note}`;
+        if (!activeOscillatorsRef.current[virtualKey]) {
+          playNote(
+            virtualKey,
+            key.frequency,
+            currentParams.additiveMode === 'on' ? currentParams.numPartials : 1,
+            currentParams.additiveMode === 'on' ? currentParams.distPartials : 0,
+            currentParams.amMode === 'on' ? currentParams.amFrequency : 0,
+            currentParams.fmMode === 'on' ? currentParams.fmFrequency : 0,
+            currentParams.lfoMode === 'on' ? currentParams.lfoFrequency : 0
+          );
+        }
       }
     }
   };
