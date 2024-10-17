@@ -580,6 +580,10 @@ const Synth = ({ onClose, position }) => {
   };
 
   const handleVirtualKeyDown = (key) => {
+    if (!audioContext) {
+      // Initialize AudioContext
+      audioContext.resume();
+    }
     const currentParams = parametersRef.current;
     if (currentParams.crazy) {
       playCrazy();
