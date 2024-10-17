@@ -580,6 +580,16 @@ const Synth = ({ onClose, position }) => {
   };
 
   const handleVirtualKeyDown = (key) => {
+    if (audioContext && audioContext.state === 'suspended') {
+      audioContext.resume().then(() => {
+        playNoteLogic(key);
+      });
+    } else {
+      playNoteLogic(key);
+    }
+  };
+  
+  const playNoteLogic = (key) => {
     const currentParams = parametersRef.current;
     if (currentParams.crazy) {
       playCrazy();
